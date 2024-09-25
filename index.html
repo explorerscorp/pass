@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario con PDF Profesional</title>
+    <!-- Cargar jsPDF y autoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- Cargar FileSaver.js para exportar a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    
+    <!-- Fuente Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7f9f9;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        label {
+            font-weight: 500;
+            color: #34495e;
+        }
+
+        input, select {
+            padding: 8px;
+            border: 1px solid #ced6e0;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 10px; /* Espaciado adicional entre botones */
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dcdde1;
+        }
+
+        th {
+            background-color: #2980b9;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        td {
+            background-color: #ecf0f1;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Formulario Profesional</h1>
+
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" placeholder="Escribe tu nombre...">
+
+        <label for="apellido">Apellido:</label>
+        <input type="text" id="apellido" placeholder="Escribe tu apellido...">
+
+        <label for="año">Año:</label>
+        <select id="año">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+
+        <button onclick="agregarFila()">Agregar a la Tabla</button>
+
+        <table id="tabla">
+            <thead>
+                <tr>
+                    <th>#</th> <!-- Columna para enumeración -->
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Año</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <button onclick="guardarPDF()">Guardar como PDF</button>
+        <button onclick="guardarExcel()">Guardar como Excel</button>
+    </div>
+
+    <script>
+        var contador = 1; // Contador para enumerar ítems
+
+        // Función para agregar una fila a la tabla
+        function agregarFila() {
+            var nombre = document.getElementById("nombre").value;
+            var apellido = document.getElementById("apellido").value;
+            var año = document.getElementById("año").value;
+
+            var tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
+            var nuevaFila = tabla.insertRow();
+
+            var celdaNumero = nuevaFila.insertCell(0);
+            var celdaNombre = nuevaFila.insertCell(1);
+            var celdaApellido = nuevaFila.insertCell(2);
+            var celdaAño = nuevaFila.insertCell(3);
+
+            celdaNumero.textContent = contador; // Agregar número
+            celdaNombre.textContent = nombre;
+            celdaApellido.textContent = apellido;
+            celdaAño.textContent = año;
+
+            contador++; // Incrementar contador
+
+            // Limpiar los campos después de agregar la fila
+            document.getElementById("nombre").value = '';
+            document.getElementById("apellido").value = '';
+            document.getElementById("año").value = '1';
+        }
+
+        // Función para guardar la tabla como PDF
+        function guardarPDF() {
+            var { jsPDF } = window.jspdf;
+            var doc = new jsPDF();
+
+            // Título del reporte
+            doc.setFontSize(18);
+            doc.text("Reporte de Campo", 14, 20);
+            doc.setFontSize(12);
+            doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 30);
+
+            // Obtener los datos de la tabla
+            var tabla = document.getElementById("tabla");
+            var filas = tabla.getElementsByTagName("tr");
+
+            // Convertir la tabla a un array de datos
+            var datosTabla = [];
+            for (var i = 1; i < filas.length; i++) { // Ignorar la primera fila (encabezados)
+                var celdas = filas[i].getElementsByTagName("td");
+                var filaDatos = [];
+                for (var j = 0; j < celdas.length; j++) {
+                    filaDatos.push(celdas[j].textContent);
+                }
+                datosTabla.push(filaDatos);
+            }
+
+            // Usar autoTable para generar la tabla en el PDF
+            doc.autoTable({
+                head: [['#', 'Nombre', 'Apellido', 'Año']], // Encabezados de la tabla
+                body: datosTabla, // Datos de la tabla
+                margin: { top: 40 }, // Márgenes del PDF
+                theme: 'grid',
+                styles: { halign: 'center' }, // Centramos el contenido
+                headStyles: { fillColor: [41, 128, 185] }, // Color del encabezado
+            });
+
+            // Descargar el PDF
+            doc.save("reporte_de_campo.pdf");
+        }
+
+        // Función para guardar la tabla como Excel
+        function guardarExcel() {
+            var wb = XLSX.utils.book_new(); // Crear un nuevo libro de Excel
+            var tabla = document.getElementById("tabla");
+            var datosTabla = [];
+
+            // Obtener los datos de la tabla
+            var filas = tabla.getElementsByTagName("tr");
+            for (var i = 0; i < filas.length; i++) {
+                var celdas = filas[i].getElementsByTagName(i === 0 ? "th" : "td");
+                var filaDatos = [];
+                for (var j = 0; j < celdas.length; j++) {
+                    filaDatos.push(celdas[j].textContent);
+                }
+                datosTabla.push(filaDatos);
+            }
+
+            var ws = XLSX.utils.aoa_to_sheet(datosTabla); // Convertir datos a hoja de Excel
+            XLSX.utils.book_append_sheet(wb, ws, "Datos"); // Añadir la hoja al libro
+            XLSX.writeFile(wb, "reporte_de_campo.xlsx"); // Descargar el archivo Excel
+        }
+    </script>
+</body>
+</html>
