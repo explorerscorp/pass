@@ -10,7 +10,7 @@
     <!-- Cargar FileSaver.js para exportar a Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    
+
     <!-- Fuente Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
@@ -83,12 +83,31 @@
             max-width: 600px;
             margin: 0 auto;
         }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px; /* Espacio entre los botones */
+        }
+
+        .button-group button {
+            width: 48%; /* Ajustar el ancho de los botones */
+        }
+
+        .nuevo-boton {
+            width: 100%; /* Botón nuevo ocupa todo el ancho */
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>Formulario Profesional</h1>
+        
+        <button class="nuevo-boton" onclick="nuevoArchivo()">Nuevo Archivo</button>
+        <label for="nombreArchivo">Nombre del Archivo:</label>
+        <input type="text" id="nombreArchivo" placeholder="Escribe el nombre del archivo..." required>
+        <button onclick="inicializarNombreArchivo()">Establecer Nombre de Archivo</button>
 
         <label for="nombre">Nombre:</label>
         <input type="text" id="nombre" placeholder="Escribe tu nombre...">
@@ -104,6 +123,14 @@
         </select>
 
         <button onclick="agregarFila()">Agregar a la Tabla</button>
+        
+
+        <div class="button-group">
+            <button onclick="guardarPDF()">Guardar como PDF</button>
+            <button onclick="guardarExcel()">Guardar como Excel</button>
+        </div>
+        
+        
 
         <table id="tabla">
             <thead>
@@ -117,16 +144,31 @@
             <tbody>
             </tbody>
         </table>
-
-        <button onclick="guardarPDF()">Guardar como PDF</button>
-        <button onclick="guardarExcel()">Guardar como Excel</button>
     </div>
 
     <script>
         var contador = 1; // Contador para enumerar ítems
+        var nombreArchivo = ''; // Variable para almacenar el nombre del archivo
+        var datosGuardados = []; // Arreglo para almacenar los datos
+
+        // Función para inicializar el nombre del archivo
+        function inicializarNombreArchivo() {
+            nombreArchivo = document.getElementById("nombreArchivo").value.trim();
+            if (nombreArchivo) {
+                document.getElementById("nombreArchivo").style.display = "none"; // Ocultar campo de nombre de archivo
+                alert("Nombre de archivo establecido: " + nombreArchivo); // Confirmación
+            } else {
+                alert("Por favor, ingrese un nombre para el archivo.");
+            }
+        }
 
         // Función para agregar una fila a la tabla
         function agregarFila() {
+            if (!nombreArchivo) {
+                alert("Por favor, establece primero el nombre del archivo.");
+                return; // No agregar fila si no se ha establecido el nombre del archivo
+            }
+
             var nombre = document.getElementById("nombre").value;
             var apellido = document.getElementById("apellido").value;
             var año = document.getElementById("año").value;
@@ -144,12 +186,38 @@
             celdaApellido.textContent = apellido;
             celdaAño.textContent = año;
 
+            // Guardar datos en el arreglo
+            datosGuardados.push([contador, nombre, apellido, año]);
+
             contador++; // Incrementar contador
 
             // Limpiar los campos después de agregar la fila
             document.getElementById("nombre").value = '';
             document.getElementById("apellido").value = '';
             document.getElementById("año").value = '1';
+        }
+
+        // Función para guardar los datos en el mismo archivo
+        function guardar() {
+            if (!nombreArchivo) {
+                alert("Por favor, ingrese un nombre de archivo primero.");
+                return;
+            }
+
+            // Convertir los datos a CSV
+            var csvContent = "data:text/csv;charset=utf-8," + datosGuardados.map(e => e.join(",")).join("\n");
+
+            // Crear enlace para descargar
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", nombreArchivo + ".csv");
+            document.body.appendChild(link); // Required for FF
+
+            link.click(); // Simular clic para descargar
+            document.body.removeChild(link); // Limpiar el enlace
+
+            alert("Datos guardados en " + nombreArchivo + ".csv");
         }
 
         // Función para guardar la tabla como PDF
@@ -159,7 +227,7 @@
 
             // Título del reporte
             doc.setFontSize(18);
-            doc.text("Reporte de Campo", 14, 20);
+            doc.text("Reporte de Campo - " + nombreArchivo, 14, 20);
             doc.setFontSize(12);
             doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 30);
 
@@ -182,37 +250,50 @@
             doc.autoTable({
                 head: [['#', 'Nombre', 'Apellido', 'Año']], // Encabezados de la tabla
                 body: datosTabla, // Datos de la tabla
-                margin: { top: 40 }, // Márgenes del PDF
-                theme: 'grid',
-                styles: { halign: 'center' }, // Centramos el contenido
-                headStyles: { fillColor: [41, 128, 185] }, // Color del encabezado
+                margin: { top: 40 }
             });
 
-            // Descargar el PDF
-            doc.save("reporte_de_campo.pdf");
+            // Guardar el PDF
+            doc.save(nombreArchivo + ".pdf");
+            alert("Datos guardados en " + nombreArchivo + ".pdf");
         }
 
         // Función para guardar la tabla como Excel
         function guardarExcel() {
-            var wb = XLSX.utils.book_new(); // Crear un nuevo libro de Excel
-            var tabla = document.getElementById("tabla");
-            var datosTabla = [];
+            var wb = XLSX.utils.book_new(); // Crear nuevo libro de Excel
+            var encabezados = [["#", "Nombre", "Apellido", "Año"]];
+            var datosTabla = encabezados.concat(datosGuardados); // Combinar encabezados y datos
 
-            // Obtener los datos de la tabla
-            var filas = tabla.getElementsByTagName("tr");
-            for (var i = 0; i < filas.length; i++) {
-                var celdas = filas[i].getElementsByTagName(i === 0 ? "th" : "td");
-                var filaDatos = [];
-                for (var j = 0; j < celdas.length; j++) {
-                    filaDatos.push(celdas[j].textContent);
-                }
-                datosTabla.push(filaDatos);
-            }
+            // Convertir a hoja de Excel
+            var ws = XLSX.utils.aoa_to_sheet(datosTabla);
+            XLSX.utils.book_append_sheet(wb, ws, "Datos"); // Agregar hoja al libro
 
-            var ws = XLSX.utils.aoa_to_sheet(datosTabla); // Convertir datos a hoja de Excel
-            XLSX.utils.book_append_sheet(wb, ws, "Datos"); // Añadir la hoja al libro
-            XLSX.writeFile(wb, "reporte_de_campo.xlsx"); // Descargar el archivo Excel
+            // Guardar el archivo Excel
+            XLSX.writeFile(wb, nombreArchivo + ".xlsx");
+            alert("Datos guardados en " + nombreArchivo + ".xlsx");
         }
+
+        // Función para iniciar un nuevo archivo
+        function nuevoArchivo() {
+            contador = 1; // Reiniciar el contador
+            datosGuardados = []; // Reiniciar el arreglo de datos
+
+            // Limpiar la tabla
+            var tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
+            tabla.innerHTML = ''; // Limpiar filas existentes
+
+            // Mostrar el campo de nombre de archivo nuevamente
+            document.getElementById("nombreArchivo").style.display = "block";
+            document.getElementById("nombreArchivo").value = ''; // Limpiar el campo
+        }
+
+        // Captura la tecla Enter para inicializar el nombre de archivo
+        document.getElementById("nombreArchivo").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                inicializarNombreArchivo();
+            }
+        });
     </script>
+
 </body>
 </html>
