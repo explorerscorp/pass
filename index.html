@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geolocalización con UTM</title>
+    <title>Geolocalización con UTM y Altitud</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -78,7 +78,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Registro de Coordenadas con UTM</h1>
+        <h1>Registro de Coordenadas con UTM y Altitud</h1>
         <div class="row">
             <div class="col-3">
                 <label for="zonaUTM">Zona UTM:</label>
@@ -109,6 +109,12 @@
         </div>
         <div class="row">
             <div class="col-2">
+                <label for="altitud">Altitud (m):</label>
+                <input type="text" id="altitud" readonly>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
                 <button id="obtenerUbicacion">Obtener Coordenadas</button>
             </div>
             <div class="col-2">
@@ -125,9 +131,11 @@
                     function(position) {
                         const latitud = position.coords.latitude;
                         const longitud = position.coords.longitude;
+                        const altitud = position.coords.altitude;
 
                         document.getElementById('latitud').value = latitud.toFixed(6);
                         document.getElementById('longitud').value = longitud.toFixed(6);
+                        document.getElementById('altitud').value = altitud ? altitud.toFixed(2) : 'No disponible';
 
                         const zonaUTM = document.getElementById('zonaUTM').value;
                         const utmCoords = latLonToUTM(latitud, longitud, zonaUTM);
@@ -191,6 +199,7 @@
         document.getElementById('guardarKML').addEventListener('click', function() {
             const latitud = document.getElementById('latitud').value;
             const longitud = document.getElementById('longitud').value;
+            const altitud = document.getElementById('altitud').value;
             const utmX = document.getElementById('utmX').value;
             const utmY = document.getElementById('utmY').value;
 
@@ -208,12 +217,13 @@
                             <p>Coordenadas:</p>
                             <p>Latitud: ${latitud}</p>
                             <p>Longitud: ${longitud}</p>
+                            <p>Altitud: ${altitud}</p>
                             <p>UTM X: ${utmX}</p>
                             <p>UTM Y: ${utmY}</p>
                         ]]>
                     </description>
                     <Point>
-                        <coordinates>${longitud},${latitud}</coordinates>
+                        <coordinates>${longitud},${latitud},${altitud === 'No disponible' ? 0 : altitud}</coordinates>
                     </Point>
                 </Placemark>
             </kml>`;
