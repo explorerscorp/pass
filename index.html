@@ -3,297 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario con PDF Profesional</title>
-    <!-- Cargar jsPDF y autoTable -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <!-- Cargar FileSaver.js para exportar a Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-
-    <!-- Fuente Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-
+    <title>Geolocalización con UTM</title>
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f7f9f9;
-            margin: 20px;
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f4f8; 
+            margin: 0; 
+            padding: 20px; 
         }
-
         h1 {
-            text-align: center;
+            text-align: center; 
             color: #2c3e50;
         }
-
-        label {
-            font-weight: 500;
-            color: #34495e;
+        .container {
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
-
-        input, select {
-            padding: 8px;
-            border: 1px solid #ced6e0;
-            border-radius: 5px;
-            width: 100%;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-
         button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
             width: 100%;
-            margin-top: 10px; /* Espaciado adicional entre botones */
+            margin: 10px 0;
         }
-
         button:hover {
             background-color: #2980b9;
         }
-
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        label {
+            display: block; 
+            margin: 5px 0; 
+            color: #34495e;
         }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border: 1px solid #dcdde1;
+        input[type="text"], select {
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            margin-bottom: 10px;
+            font-size: 16px; 
         }
-
-        th {
-            background-color: #2980b9;
-            color: white;
-            text-transform: uppercase;
-        }
-
-        td {
-            background-color: #ecf0f1;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .button-group {
-            display: flex;
+        .row {
+            display: flex; 
+            flex-wrap: wrap;
             justify-content: space-between;
-            margin-bottom: 15px; /* Espacio entre los botones */
+            margin-bottom: 20px;
         }
-
-        .button-group button {
-            width: 48%; /* Ajustar el ancho de los botones */
+        .col-3 {
+            width: 31%;
         }
-
-        .nuevo-boton {
-            width: 100%; /* Botón nuevo ocupa todo el ancho */
+        .col-2 {
+            width: 48%;
+        }
+        #mensaje {
+            color: red; 
+            margin-top: 20px; 
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .col-3, .col-2 {
+                width: 100%;
+            }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 </head>
 <body>
-
     <div class="container">
-        <h1>Formulario Profesional</h1>
-        
-        <button class="nuevo-boton" onclick="nuevoArchivo()">Nuevo Archivo</button>
-        <label for="nombreArchivo">Nombre del Archivo:</label>
-        <input type="text" id="nombreArchivo" placeholder="Escribe el nombre del archivo..." required>
-        <button onclick="inicializarNombreArchivo()">Establecer Nombre de Archivo</button>
-
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" placeholder="Escribe tu nombre...">
-
-        <label for="apellido">Apellido:</label>
-        <input type="text" id="apellido" placeholder="Escribe tu apellido...">
-
-        <label for="año">Año:</label>
-        <select id="año">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-        </select>
-
-        <button onclick="agregarFila()">Agregar a la Tabla</button>
-        
-
-        <div class="button-group">
-            <button onclick="guardarPDF()">Guardar como PDF</button>
-            <button onclick="guardarExcel()">Guardar como Excel</button>
+        <h1>Registro de Coordenadas con UTM</h1>
+        <div class="row">
+            <div class="col-3">
+                <label for="zonaUTM">Zona UTM:</label>
+                <select id="zonaUTM">
+                    <option value="17S">17S</option>
+                    <option value="18S">18S</option>
+                    <option value="19S">19S</option>
+                </select>
+            </div>
+            <div class="col-3">
+                <label for="latitud">Latitud:</label>
+                <input type="text" id="latitud" readonly>
+            </div>
+            <div class="col-3">
+                <label for="longitud">Longitud:</label>
+                <input type="text" id="longitud" readonly>
+            </div>
         </div>
-        
-        
-
-        <table id="tabla">
-            <thead>
-                <tr>
-                    <th>#</th> <!-- Columna para enumeración -->
-                    <th>Nombre</th>
-                    <th>Apellido</th>
-                    <th>Año</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <div class="row">
+            <div class="col-2">
+                <label for="utmX">Este (UTM X):</label>
+                <input type="text" id="utmX" readonly>
+            </div>
+            <div class="col-2">
+                <label for="utmY">Norte (UTM Y):</label>
+                <input type="text" id="utmY" readonly>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
+                <button id="obtenerUbicacion">Obtener Coordenadas</button>
+            </div>
+            <div class="col-2">
+                <button id="guardarKML">Guardar KML</button>
+            </div>
+        </div>
+        <div id="mensaje"></div>
     </div>
 
     <script>
-        var contador = 1; // Contador para enumerar ítems
-        var nombreArchivo = ''; // Variable para almacenar el nombre del archivo
-        var datosGuardados = []; // Arreglo para almacenar los datos
+        document.getElementById('obtenerUbicacion').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    function(position) {
+                        const latitud = position.coords.latitude;
+                        const longitud = position.coords.longitude;
 
-        // Función para inicializar el nombre del archivo
-        function inicializarNombreArchivo() {
-            nombreArchivo = document.getElementById("nombreArchivo").value.trim();
-            if (nombreArchivo) {
-                document.getElementById("nombreArchivo").style.display = "none"; // Ocultar campo de nombre de archivo
-                alert("Nombre de archivo establecido: " + nombreArchivo); // Confirmación
+                        document.getElementById('latitud').value = latitud.toFixed(6);
+                        document.getElementById('longitud').value = longitud.toFixed(6);
+
+                        const zonaUTM = document.getElementById('zonaUTM').value;
+                        const utmCoords = latLonToUTM(latitud, longitud, zonaUTM);
+
+                        document.getElementById('utmX').value = utmCoords[0].toFixed(2);
+                        document.getElementById('utmY').value = utmCoords[1].toFixed(2);
+
+                        document.getElementById('mensaje').textContent = '';
+                    },
+                    function(error) {
+                        handleGeolocationError(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
             } else {
-                alert("Por favor, ingrese un nombre para el archivo.");
+                alert('Geolocalización no es soportada en este navegador.');
             }
+        });
+
+        function handleGeolocationError(error) {
+            let mensaje;
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    mensaje = "Permiso denegado. Por favor, permite el acceso a la ubicación en la configuración de tu navegador.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    mensaje = "La ubicación no está disponible. Asegúrate de que los servicios de ubicación estén habilitados.";
+                    break;
+                case error.TIMEOUT:
+                    mensaje = "El tiempo de espera para obtener la ubicación ha expirado.";
+                    break;
+                default:
+                    mensaje = "Ha ocurrido un error desconocido.";
+            }
+            document.getElementById('mensaje').textContent = mensaje;
         }
 
-        // Función para agregar una fila a la tabla
-        function agregarFila() {
-            if (!nombreArchivo) {
-                alert("Por favor, establece primero el nombre del archivo.");
-                return; // No agregar fila si no se ha establecido el nombre del archivo
+        function latLonToUTM(lat, lon, zonaUTM) {
+            const wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+            let utm;
+
+            switch (zonaUTM) {
+                case '17S':
+                    utm = "+proj=utm +zone=17 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+                    break;
+                case '18S':
+                    utm = "+proj=utm +zone=18 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+                    break;
+                case '19S':
+                    utm = "+proj=utm +zone=19 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+                    break;
             }
 
-            var nombre = document.getElementById("nombre").value;
-            var apellido = document.getElementById("apellido").value;
-            var año = document.getElementById("año").value;
-
-            var tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
-            var nuevaFila = tabla.insertRow();
-
-            var celdaNumero = nuevaFila.insertCell(0);
-            var celdaNombre = nuevaFila.insertCell(1);
-            var celdaApellido = nuevaFila.insertCell(2);
-            var celdaAño = nuevaFila.insertCell(3);
-
-            celdaNumero.textContent = contador; // Agregar número
-            celdaNombre.textContent = nombre;
-            celdaApellido.textContent = apellido;
-            celdaAño.textContent = año;
-
-            // Guardar datos en el arreglo
-            datosGuardados.push([contador, nombre, apellido, año]);
-
-            contador++; // Incrementar contador
-
-            // Limpiar los campos después de agregar la fila
-            document.getElementById("nombre").value = '';
-            document.getElementById("apellido").value = '';
-            document.getElementById("año").value = '1';
+            return proj4(wgs84, utm, [lon, lat]);
         }
 
-        // Función para guardar los datos en el mismo archivo
-        function guardar() {
-            if (!nombreArchivo) {
-                alert("Por favor, ingrese un nombre de archivo primero.");
+        document.getElementById('guardarKML').addEventListener('click', function() {
+            const latitud = document.getElementById('latitud').value;
+            const longitud = document.getElementById('longitud').value;
+            const utmX = document.getElementById('utmX').value;
+            const utmY = document.getElementById('utmY').value;
+
+            if (!latitud || !longitud) {
+                alert('Por favor, obtén las coordenadas antes de guardar el KML.');
                 return;
             }
 
-            // Convertir los datos a CSV
-            var csvContent = "data:text/csv;charset=utf-8," + datosGuardados.map(e => e.join(",")).join("\n");
+            const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+            <kml xmlns="http://www.opengis.net/kml/2.2">
+                <Placemark>
+                    <name>Ubicación Actual</name>
+                    <description>
+                        <![CDATA[
+                            <p>Coordenadas:</p>
+                            <p>Latitud: ${latitud}</p>
+                            <p>Longitud: ${longitud}</p>
+                            <p>UTM X: ${utmX}</p>
+                            <p>UTM Y: ${utmY}</p>
+                        ]]>
+                    </description>
+                    <Point>
+                        <coordinates>${longitud},${latitud}</coordinates>
+                    </Point>
+                </Placemark>
+            </kml>`;
 
-            // Crear enlace para descargar
-            var encodedUri = encodeURI(csvContent);
-            var link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", nombreArchivo + ".csv");
-            document.body.appendChild(link); // Required for FF
-
-            link.click(); // Simular clic para descargar
-            document.body.removeChild(link); // Limpiar el enlace
-
-            alert("Datos guardados en " + nombreArchivo + ".csv");
-        }
-
-        // Función para guardar la tabla como PDF
-        function guardarPDF() {
-            var { jsPDF } = window.jspdf;
-            var doc = new jsPDF();
-
-            // Título del reporte
-            doc.setFontSize(18);
-            doc.text("Reporte de Campo - " + nombreArchivo, 14, 20);
-            doc.setFontSize(12);
-            doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 30);
-
-            // Obtener los datos de la tabla
-            var tabla = document.getElementById("tabla");
-            var filas = tabla.getElementsByTagName("tr");
-
-            // Convertir la tabla a un array de datos
-            var datosTabla = [];
-            for (var i = 1; i < filas.length; i++) { // Ignorar la primera fila (encabezados)
-                var celdas = filas[i].getElementsByTagName("td");
-                var filaDatos = [];
-                for (var j = 0; j < celdas.length; j++) {
-                    filaDatos.push(celdas[j].textContent);
-                }
-                datosTabla.push(filaDatos);
-            }
-
-            // Usar autoTable para generar la tabla en el PDF
-            doc.autoTable({
-                head: [['#', 'Nombre', 'Apellido', 'Año']], // Encabezados de la tabla
-                body: datosTabla, // Datos de la tabla
-                margin: { top: 40 }
-            });
-
-            // Guardar el PDF
-            doc.save(nombreArchivo + ".pdf");
-            alert("Datos guardados en " + nombreArchivo + ".pdf");
-        }
-
-        // Función para guardar la tabla como Excel
-        function guardarExcel() {
-            var wb = XLSX.utils.book_new(); // Crear nuevo libro de Excel
-            var encabezados = [["#", "Nombre", "Apellido", "Año"]];
-            var datosTabla = encabezados.concat(datosGuardados); // Combinar encabezados y datos
-
-            // Convertir a hoja de Excel
-            var ws = XLSX.utils.aoa_to_sheet(datosTabla);
-            XLSX.utils.book_append_sheet(wb, ws, "Datos"); // Agregar hoja al libro
-
-            // Guardar el archivo Excel
-            XLSX.writeFile(wb, nombreArchivo + ".xlsx");
-            alert("Datos guardados en " + nombreArchivo + ".xlsx");
-        }
-
-        // Función para iniciar un nuevo archivo
-        function nuevoArchivo() {
-            contador = 1; // Reiniciar el contador
-            datosGuardados = []; // Reiniciar el arreglo de datos
-
-            // Limpiar la tabla
-            var tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
-            tabla.innerHTML = ''; // Limpiar filas existentes
-
-            // Mostrar el campo de nombre de archivo nuevamente
-            document.getElementById("nombreArchivo").style.display = "block";
-            document.getElementById("nombreArchivo").value = ''; // Limpiar el campo
-        }
-
-        // Captura la tecla Enter para inicializar el nombre de archivo
-        document.getElementById("nombreArchivo").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                inicializarNombreArchivo();
-            }
+            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'coordenadas.kml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         });
     </script>
-
 </body>
 </html>
