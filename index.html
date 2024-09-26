@@ -3,231 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geolocalización con UTM</title>
+    <title>Collage de Fotos y Exportar a PDF</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f0f4f8; 
-            margin: 0; 
-            padding: 20px; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        h1 {
-            text-align: center; 
-            color: #2c3e50;
-        }
+
         .container {
-            max-width: 500px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 10px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 190mm; /* Ajustado para caber dentro del A4 */
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative; /* Para la numeración de página */
         }
+
+        .photo-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Ajuste automático de columnas */
+            gap: 10px; /* Espacio entre las imágenes */
+            margin-top: 10px;
+        }
+
+        .photo-panel img {
+            width: 100%; /* Ajustar al 100% del contenedor */
+            height: auto;
+            border: 2px solid #3498db; /* Borde azul */
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 14px;
+            color: #3498db;
+        }
+
+        h1 {
+            text-align: center;
+            color: #3498db;
+        }
+
+        /* Ocultar los botones y campos de entrada en el PDF */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+
         button {
-            background-color: #e4260d; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            padding: 10px 20px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            transition: background-color 0.3s;
-            width: 90%;
-            margin: 10px 0;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: block;
+            width: 200px;
+            margin-left: auto;
+            margin-right: auto;
         }
+
         button:hover {
             background-color: #2980b9;
         }
-        label {
-            display: block; 
-            margin: 5px 0; 
-            color: #34495e;
-        }
-        input[type="text"], select {
-            width: 70%; 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            border-radius: 5px; 
-            margin-bottom: 10px;
-            font-size: 16px; 
-        }
-        .row {
-            display: flex; 
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .col-3 {
-            width: 31%;
-        }
-        .col-2 {
-            width: 48%;
-        }
-        #mensaje {
-            color: red; 
-            margin-top: 20px; 
-            text-align: center;
-        }
-        @media (max-width: 600px) {
-            .col-3, .col-2 {
-                width: 100%;
-            }
-        }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Registro de Coordenadas con UTM</h1>
-        <div class="row">
-            <div class="col-3">
-                <label for="zonaUTM">Zona UTM:</label>
-                <select id="zonaUTM">
-                    <option value="17S">17S</option>
-                    <option value="18S">18S</option>
-                    <option value="19S">19S</option>
-                </select>
-            </div>
-            <div class="col-3">
-                <label for="latitud">Latitud:</label>
-                <input type="text" id="latitud" readonly>
-            </div>
-            <div class="col-3">
-                <label for="longitud">Longitud:</label>
-                <input type="text" id="longitud" readonly>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-2">
-                <label for="utmX">Este (UTM X):</label>
-                <input type="text" id="utmX" readonly>
-            </div>
-            <div class="col-2">
-                <label for="utmY">Norte (UTM Y):</label>
-                <input type="text" id="utmY" readonly>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-2">
-                <button id="obtenerUbicacion">Obtener Coordenadas</button>
-            </div>
-            <div class="col-2">
-                <button id="guardarKML">Guardar KML</button>
-            </div>
-        </div>
-        <div id="mensaje"></div>
+
+    <div class="container" id="pdfContent">
+        <input type="file" id="fileInput" accept="image/*" multiple class="no-print">
+        <div id="photoPages"></div> <!-- Contenedor para todas las páginas -->
+        <button id="downloadPDF" class="no-print" style="display:none;">Exportar a PDF</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
     <script>
-        document.getElementById('obtenerUbicacion').addEventListener('click', function() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(
-                    function(position) {
-                        const latitud = position.coords.latitude;
-                        const longitud = position.coords.longitude;
+        const fileInput = document.getElementById('fileInput');
+        const photoPages = document.getElementById('photoPages');
+        const downloadButton = document.getElementById('downloadPDF');
+        const container = document.getElementById('pdfContent');
 
-                        document.getElementById('latitud').value = latitud.toFixed(6);
-                        document.getElementById('longitud').value = longitud.toFixed(6);
+        fileInput.addEventListener('change', function(event) {
+            const files = event.target.files;
 
-                        const zonaUTM = document.getElementById('zonaUTM').value;
-                        const utmCoords = latLonToUTM(latitud, longitud, zonaUTM);
-
-                        document.getElementById('utmX').value = utmCoords[0].toFixed(2);
-                        document.getElementById('utmY').value = utmCoords[1].toFixed(2);
-
-                        document.getElementById('mensaje').textContent = '';
-                    },
-                    function(error) {
-                        handleGeolocationError(error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    }
-                );
-            } else {
-                alert('Geolocalización no es soportada en este navegador.');
-            }
-        });
-
-        function handleGeolocationError(error) {
-            let mensaje;
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    mensaje = "Permiso denegado. Por favor, permite el acceso a la ubicación en la configuración de tu navegador.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensaje = "La ubicación no está disponible. Asegúrate de que los servicios de ubicación estén habilitados.";
-                    break;
-                case error.TIMEOUT:
-                    mensaje = "El tiempo de espera para obtener la ubicación ha expirado.";
-                    break;
-                default:
-                    mensaje = "Ha ocurrido un error desconocido.";
-            }
-            document.getElementById('mensaje').textContent = mensaje;
-        }
-
-        function latLonToUTM(lat, lon, zonaUTM) {
-            const wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
-            let utm;
-
-            switch (zonaUTM) {
-                case '17S':
-                    utm = "+proj=utm +zone=17 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-                    break;
-                case '18S':
-                    utm = "+proj=utm +zone=18 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-                    break;
-                case '19S':
-                    utm = "+proj=utm +zone=19 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-                    break;
-            }
-
-            return proj4(wgs84, utm, [lon, lat]);
-        }
-
-        document.getElementById('guardarKML').addEventListener('click', function() {
-            const latitud = document.getElementById('latitud').value;
-            const longitud = document.getElementById('longitud').value;
-            const utmX = document.getElementById('utmX').value;
-            const utmY = document.getElementById('utmY').value;
-
-            if (!latitud || !longitud) {
-                alert('Por favor, obtén las coordenadas antes de guardar el KML.');
+            // Limitar la cantidad de fotos a 12 (para dos páginas)
+            if (files.length > 12) {
+                alert('Por favor, selecciona un máximo de 12 fotos.');
                 return;
             }
 
-            const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-            <kml xmlns="http://www.opengis.net/kml/2.2">
-                <Placemark>
-                    <name>Ubicación Actual</name>
-                    <description>
-                        <![CDATA[
-                            <p>Coordenadas:</p>
-                            <p>Latitud: ${latitud}</p>
-                            <p>Longitud: ${longitud}</p>
-                            <p>UTM X: ${utmX}</p>
-                            <p>UTM Y: ${utmY}</p>
-                        ]]>
-                    </description>
-                    <Point>
-                        <coordinates>${longitud},${latitud}</coordinates>
-                    </Point>
-                </Placemark>
-            </kml>`;
+            // Limpiar el contenido anterior
+            photoPages.innerHTML = '';
 
-            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'coordenadas.kml';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Dividir las fotos en bloques de 6 por página
+            const chunkSize = 6;
+            const chunks = [];
+
+            for (let i = 0; i < files.length; i += chunkSize) {
+                chunks.push(Array.from(files).slice(i, i + chunkSize));
+            }
+
+            // Crear una nueva página por cada bloque de 6 fotos
+            chunks.forEach((chunk, index) => {
+                const page = document.createElement('div');
+                page.classList.add('container');
+
+                // Agregar el título en cada página
+                const title = document.createElement('h1');
+                title.textContent = 'Panel de Fotos';
+                page.appendChild(title);
+
+                const photoPanel = document.createElement('div');
+                photoPanel.classList.add('photo-panel');
+
+                chunk.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        photoPanel.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+
+                // Agregar el panel de fotos
+                page.appendChild(photoPanel);
+
+                // Agregar el número de página
+                const pageNumber = document.createElement('div');
+                pageNumber.classList.add('page-number');
+                pageNumber.textContent = `Página ${index + 1}`;
+                page.appendChild(pageNumber);
+
+                // Agregar la página al contenedor principal
+                photoPages.appendChild(page);
+            });
+
+            // Mostrar el botón de exportar a PDF si se seleccionaron fotos
+            if (files.length > 0) {
+                downloadButton.style.display = 'inline-block';
+            }
+        });
+
+        downloadButton.addEventListener('click', function() {
+            const options = {
+                margin: [10, 10, 10, 10], // Ajustar márgenes para que el borde esté dentro de la hoja
+                filename: 'panel-de-fotos.pdf',
+                html2canvas: { scale: 4 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Mantener varias páginas con el mismo formato
+            };
+
+            html2pdf()
+                .set(options)
+                .from(container)
+                .toPdf()
+                .get('pdf')
+                .then(function (pdf) {
+                    pdf.deletePage(pdf.internal.getNumberOfPages()); // Eliminar la última página que contiene los botones
+                })
+                .save();
         });
     </script>
+
 </body>
 </html>
