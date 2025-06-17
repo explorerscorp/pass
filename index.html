@@ -3,173 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collage de Fotos y Exportar a PDF</title>
+    <title>Generador de Contraseñas</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
 
         .container {
-            width: 190mm; /* Ajustado para caber dentro del A4 */
-            margin: 0 auto;
-            padding: 20px;
-            box-sizing: border-box;
-            position: relative; /* Para la numeración de página */
-        }
-
-        .photo-panel {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Ajuste automático de columnas */
-            gap: 10px; /* Espacio entre las imágenes */
-            margin-top: 10px;
-        }
-
-        .photo-panel img {
-            width: 100%; /* Ajustar al 100% del contenedor */
-            height: auto;
-            border: 2px solid #3498db; /* Borde azul */
-            padding: 5px;
-            box-sizing: border-box;
-        }
-
-        .page-number {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            font-size: 14px;
-            color: #3498db;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
         }
 
         h1 {
             text-align: center;
-            color: #3498db;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        /* Ocultar los botones y campos de entrada en el PDF */
-        @media print {
-            .no-print {
-                display: none !important;
-            }
+        .password-display {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        #passwordOutput {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #333;
+            text-align: center;
+            font-weight: bold;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+            border: none;
+        }
+
+        .length-display {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .checkboxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
         }
 
         button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #3498db;
-            color: white;
+            flex: 1;
+            padding: 15px;
             border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            display: block;
-            width: 200px;
-            margin-left: auto;
-            margin-right: auto;
+            transition: all 0.3s ease;
         }
 
-        button:hover {
-            background-color: #2980b9;
+        .btn-generate {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-copy:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .strength-meter {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .strength-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .strength-fill {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+        .strength-weak { background: #dc3545; }
+        .strength-medium { background: #ffc107; }
+        .strength-strong { background: #28a745; }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .checkboxes {
+                grid-template-columns: 1fr;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>🔐 Generador de Contraseñas</h1>
+        
+        <div class="password-display">
+            <div id="passwordOutput">Haz clic en "Generar" para crear tu contraseña</div>
+        </div>
 
-    <div class="container" id="pdfContent">
-        <input type="file" id="fileInput" accept="image/*" multiple class="no-print">
-        <div id="photoPages"></div> <!-- Contenedor para todas las páginas -->
-        <button id="downloadPDF" class="no-print" style="display:none;">Exportar a PDF</button>
+        <div class="controls">
+            <div class="control-group">
+                <label for="lengthSlider">Longitud de la contraseña:</label>
+                <div class="length-display" id="lengthDisplay">12</div>
+                <input type="range" id="lengthSlider" min="4" max="50" value="12">
+            </div>
+
+            <div class="checkboxes">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeUppercase" checked>
+                    <label for="includeUppercase">Mayúsculas (A-Z)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeLowercase" checked>
+                    <label for="includeLowercase">Minúsculas (a-z)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeNumbers" checked>
+                    <label for="includeNumbers">Números (0-9)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeSymbols" checked>
+                    <label for="includeSymbols">Símbolos (!@#$%)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-generate" onclick="generatePassword()">🎲 Generar Contraseña</button>
+            <button class="btn-copy" id="copyBtn" onclick="copyPassword()" disabled>📋 Copiar</button>
+        </div>
+
+        <div class="strength-meter">
+            <div>Fortaleza de la contraseña:</div>
+            <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill"></div>
+            </div>
+            <div id="strengthText">-</div>
+        </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <div class="notification" id="notification">¡Contraseña copiada al portapapeles!</div>
+
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const photoPages = document.getElementById('photoPages');
-        const downloadButton = document.getElementById('downloadPDF');
-        const container = document.getElementById('pdfContent');
+        // Caracteres disponibles
+        const characters = {
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        };
 
-        fileInput.addEventListener('change', function(event) {
-            const files = event.target.files;
+        let currentPassword = '';
 
-            // Limitar la cantidad de fotos a 12 (para dos páginas)
-            if (files.length > 12) {
-                alert('Por favor, selecciona un máximo de 12 fotos.');
+        // Actualizar display de longitud
+        document.getElementById('lengthSlider').addEventListener('input', function() {
+            document.getElementById('lengthDisplay').textContent = this.value;
+        });
+
+        // Función para generar contraseña
+        function generatePassword() {
+            const length = parseInt(document.getElementById('lengthSlider').value);
+            const includeUppercase = document.getElementById('includeUppercase').checked;
+            const includeLowercase = document.getElementById('includeLowercase').checked;
+            const includeNumbers = document.getElementById('includeNumbers').checked;
+            const includeSymbols = document.getElementById('includeSymbols').checked;
+
+            // Verificar que al menos una opción esté seleccionada
+            if (!includeUppercase && !includeLowercase && !includeNumbers && !includeSymbols) {
+                alert('Por favor selecciona al menos un tipo de carácter');
                 return;
             }
 
-            // Limpiar el contenido anterior
-            photoPages.innerHTML = '';
+            // Construir conjunto de caracteres
+            let charset = '';
+            if (includeLowercase) charset += characters.lowercase;
+            if (includeUppercase) charset += characters.uppercase;
+            if (includeNumbers) charset += characters.numbers;
+            if (includeSymbols) charset += characters.symbols;
 
-            // Dividir las fotos en bloques de 6 por página
-            const chunkSize = 6;
-            const chunks = [];
+            // Generar contraseña
+            let password = '';
+            
+            // Asegurar que tenga al menos un carácter de cada tipo seleccionado
+            if (includeUppercase) password += characters.uppercase[Math.floor(Math.random() * characters.uppercase.length)];
+            if (includeLowercase) password += characters.lowercase[Math.floor(Math.random() * characters.lowercase.length)];
+            if (includeNumbers) password += characters.numbers[Math.floor(Math.random() * characters.numbers.length)];
+            if (includeSymbols) password += characters.symbols[Math.floor(Math.random() * characters.symbols.length)];
 
-            for (let i = 0; i < files.length; i += chunkSize) {
-                chunks.push(Array.from(files).slice(i, i + chunkSize));
+            // Completar el resto de la contraseña
+            for (let i = password.length; i < length; i++) {
+                password += charset[Math.floor(Math.random() * charset.length)];
             }
 
-            // Crear una nueva página por cada bloque de 6 fotos
-            chunks.forEach((chunk, index) => {
-                const page = document.createElement('div');
-                page.classList.add('container');
+            // Mezclar la contraseña
+            password = password.split('').sort(() => Math.random() - 0.5).join('');
 
-                // Agregar el título en cada página
-                const title = document.createElement('h1');
-                title.textContent = 'Panel de Fotos';
-                page.appendChild(title);
+            // Mostrar contraseña
+            currentPassword = password;
+            document.getElementById('passwordOutput').textContent = password;
+            document.getElementById('copyBtn').disabled = false;
 
-                const photoPanel = document.createElement('div');
-                photoPanel.classList.add('photo-panel');
+            // Evaluar fortaleza
+            evaluateStrength(password);
+        }
 
-                chunk.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        photoPanel.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
-                });
+        // Función para copiar contraseña
+        function copyPassword() {
+            if (!currentPassword) return;
 
-                // Agregar el panel de fotos
-                page.appendChild(photoPanel);
-
-                // Agregar el número de página
-                const pageNumber = document.createElement('div');
-                pageNumber.classList.add('page-number');
-                pageNumber.textContent = `Página ${index + 1}`;
-                page.appendChild(pageNumber);
-
-                // Agregar la página al contenedor principal
-                photoPages.appendChild(page);
+            navigator.clipboard.writeText(currentPassword).then(() => {
+                showNotification();
+            }).catch(() => {
+                // Fallback para navegadores que no soportan clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = currentPassword;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification();
             });
+        }
 
-            // Mostrar el botón de exportar a PDF si se seleccionaron fotos
-            if (files.length > 0) {
-                downloadButton.style.display = 'inline-block';
+        // Función para mostrar notificación
+        function showNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        // Función para evaluar fortaleza de contraseña
+        function evaluateStrength(password) {
+            let score = 0;
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
+
+            // Criterios de evaluación
+            if (password.length >= 8) score += 1;
+            if (password.length >= 12) score += 1;
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            if (/[^A-Za-z0-9]/.test(password)) score += 1;
+            if (password.length >= 16) score += 1;
+
+            // Mostrar resultado
+            if (score <= 2) {
+                strengthFill.className = 'strength-fill strength-weak';
+                strengthFill.style.width = '30%';
+                strengthText.textContent = 'Débil';
+            } else if (score <= 4) {
+                strengthFill.className = 'strength-fill strength-medium';
+                strengthFill.style.width = '60%';
+                strengthText.textContent = 'Media';
+            } else {
+                strengthFill.className = 'strength-fill strength-strong';
+                strengthFill.style.width = '100%';
+                strengthText.textContent = 'Fuerte';
             }
-        });
+        }
 
-        downloadButton.addEventListener('click', function() {
-            const options = {
-                margin: [10, 10, 10, 10], // Ajustar márgenes para que el borde esté dentro de la hoja
-                filename: 'panel-de-fotos.pdf',
-                html2canvas: { scale: 4 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Mantener varias páginas con el mismo formato
-            };
-
-            html2pdf()
-                .set(options)
-                .from(container)
-                .toPdf()
-                .get('pdf')
-                .then(function (pdf) {
-                    pdf.deletePage(pdf.internal.getNumberOfPages()); // Eliminar la última página que contiene los botones
-                })
-                .save();
-        });
+        // Generar contraseña inicial
+        generatePassword();
     </script>
-
 </body>
 </html>
